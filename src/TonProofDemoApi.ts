@@ -1,13 +1,19 @@
 import { TonProofItemReplySuccess } from '@tonconnect/protocol';
 import { Account } from '@tonconnect/sdk';
+import axios from 'axios';
 import { connector } from './connector';
 import './patch-local-storage-for-github-pages';
 
 class TonProofDemoApiService {
 	localStorageKey = 'demo-api-access-token';
 
-	host = 'https://demo.tonconnect.dev';
-
+	api = axios.create({
+		baseURL: 'http://0.0.0.0:8000',
+		headers: {
+			'Content-Type': 'application/json',
+			Origin: 'http://192.168.253.154:3000',
+		},
+	});
 	accessToken: string | null = null;
 
 	constructor() {
@@ -37,13 +43,13 @@ class TonProofDemoApiService {
 	}
 
 	async generatePayload() {
-		const response = await (
-			await fetch(`${this.host}/ton-proof/generatePayload`, {
-				method: 'POST',
-			})
-		).json();
-
-		return response.payload as string;
+		const response = await this.api.get('/auth/ton', {
+			headers: {
+				Origin: 'http://localhost:3000',
+			},
+		});
+		const data = response.data;
+		return data.payload as string;
 	}
 
 	async checkProof(proof: TonProofItemReplySuccess['proof'], account: Account) {
@@ -57,33 +63,23 @@ class TonProofDemoApiService {
 				},
 			};
 
-			const response = await (
-				await fetch(`${this.host}/ton-proof/checkProof`, {
-					method: 'POST',
-					body: JSON.stringify(reqBody),
-				})
-			).json();
+			const response = await this.api.post('/auth/ton', reqBody);
+			const data = response.data;
 
-			if (response?.token) {
-				localStorage.setItem(this.localStorageKey, response.token);
-				this.accessToken = response.token;
+			if (data?.token) {
+				localStorage.setItem(this.localStorageKey, data.token);
+				this.accessToken = data.token;
+				this.api.defaults.headers['Authorization'] = `Bearer ${this.accessToken}`;
 			}
 		} catch (e) {
 			console.log('checkProof error:', e);
 		}
 	}
 
-	async getAccountInfo(account: Account) {
-		const response = await (
-			await fetch(`${this.host}/dapp/getAccountInfo?network=${account.chain}`, {
-				headers: {
-					Authorization: `Bearer ${this.accessToken}`,
-					'Content-Type': 'application/json',
-				},
-			})
-		).json();
-
-		return response as {};
+	async getAccountInfo() {
+		this.api.defaults.headers['Authorization'] = `Bearer ${this.accessToken}`;
+		const response = await this.api.get('/profile');
+		return response.data as {};
 	}
 
 	reset() {

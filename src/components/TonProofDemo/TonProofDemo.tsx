@@ -15,7 +15,7 @@ export function TonProofDemo() {
 		if (!wallet) {
 			return;
 		}
-		const response = await TonProofDemoApi.getAccountInfo(wallet.account);
+		const response = await TonProofDemoApi.getAccountInfo();
 
 		setData(response);
 	}, [wallet]);

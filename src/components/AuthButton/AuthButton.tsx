@@ -101,7 +101,7 @@ export function AuthButton() {
 				)}
 			</div>
 			<Modal
-				title="Connect to Tonkeeper"
+				title={modalUniversalLink}
 				open={!!modalUniversalLink}
 				onOk={() => setModalUniversalLink('')}
 				onCancel={() => setModalUniversalLink('')}
